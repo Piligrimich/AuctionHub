@@ -3,6 +3,7 @@ package postgres
 import (
 	"AuthService/internal/domain"
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -50,7 +51,7 @@ func (repo *userRepo) GetByEmail(ctx context.Context, email string) (*domain.Use
 	var user domain.User
 	err := repo.db.GetContext(ctx, &user, "SELECT * FROM users WHERE email=$1", email)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("got user by email: %w", err)
@@ -62,7 +63,7 @@ func (repo *userRepo) GetByID(ctx context.Context, id string) (*domain.User, err
 	var user domain.User
 	err := repo.db.GetContext(ctx, &user, "SELECT * FROM users WHERE id=$1", id)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("got user by id: %w", err)

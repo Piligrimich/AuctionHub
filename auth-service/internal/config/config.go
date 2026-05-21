@@ -38,9 +38,9 @@ func LoadConfig() *Config {
 		log.Println("Error loading .env file")
 	}
 
-	accessTTL, err := time.ParseDuration(getEnv("JWT_ACCESS_TLL", "15m"))
+	accessTTL, err := time.ParseDuration(getEnv("JWT_ACCESS_TTL", "15m"))
 	if err != nil {
-		log.Fatal("Invalid JWT_ACCESS_TLL: ", err)
+		log.Fatal("Invalid JWT_ACCESS_TTL: ", err)
 	}
 	refreshTTL, err := time.ParseDuration(getEnv("JWT_REFRESH_TTL", "720h"))
 	if err != nil {

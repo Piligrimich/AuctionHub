@@ -3,6 +3,8 @@ package postgres
 import (
 	"AuthService/internal/domain"
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
@@ -13,11 +15,11 @@ type refreshTokenRepo struct {
 	db *sqlx.DB
 }
 
-func NewRefreshTokenRepo(db *sqlx.DB) *domain.RefreshTokenRepository {
+func NewRefreshTokenRepo(db *sqlx.DB) domain.RefreshTokenRepository {
 	return &refreshTokenRepo{db: db}
 }
 
-func (repo *refreshTokenRepo) Create(ctx context.Context, token domain.RefreshToken) error {
+func (repo *refreshTokenRepo) Create(ctx context.Context, token *domain.RefreshToken) error {
 	query := `
 		INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
 		VALUES (:user_id, :token_hash, :expires_at)
@@ -43,19 +45,21 @@ func (repo *refreshTokenRepo) Create(ctx context.Context, token domain.RefreshTo
 
 func (repo *refreshTokenRepo) GetByHash(ctx context.Context, hash string) (*domain.RefreshToken, error) {
 	var token domain.RefreshToken
-	err := repo.db.GetContext(ctx, &token, "SELECT * FROM refresh_tokens WHERE hash = $1", hash)
+	err := repo.db.GetContext(ctx, &token, "SELECT * FROM refresh_tokens WHERE token_hash = $1", hash)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
+		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrInvalidToken
 		}
+		return nil, fmt.Errorf("get refresh token by hash: %w", err)
 	}
 	return &token, nil
 }
 
 func (repo *refreshTokenRepo) DeleteByHash(ctx context.Context, hash string) error {
-	_, err := repo.db.ExecContext(ctx, "DELETE FROM refresh_tokens WHERE hash = $1", hash)
+	_, err := repo.db.ExecContext(ctx, "DELETE FROM refresh_tokens WHERE token_hash = $1", hash)
 	return err
 }
+
 func (repo *refreshTokenRepo) DeleteAllForUser(ctx context.Context, userID string) error {
 	_, err := repo.db.ExecContext(ctx, "DELETE FROM refresh_tokens WHERE user_id = $1", userID)
 	return err
